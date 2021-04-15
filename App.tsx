@@ -6,17 +6,12 @@ import * as WebBrowser from 'expo-web-browser';
 import jwt_decode from "jwt-decode";
 
 const authority = "192.168.18.3:44362";
+const redirectUri = Linking.makeUrl('/');
 
 export default function App() {
   const [result, setResult] = useState<WebBrowser.WebBrowserAuthSessionResult | null>(null);
 
-  Linking.addEventListener('url', function () {
-    console.log(arguments);
-  });
-
-  let handleAuthenticatePress = async () => {
-    const redirectUri = Linking.makeUrl('/');
-    const acr = 'urn:grn:authn:se:bankid:same-device';
+  let handleAuthenticate = async (acr) => {
     const url = `https://${authority}/oauth2/authorize?scope=openid&nonce=blah&client_id=https://localhost:44301/&redirect_uri=${redirectUri}&response_type=id_token&response_mode=query&nonce=ecnon&state=etats&acr_values=${acr}`;
 
     const result = await WebBrowser.openAuthSessionAsync(
@@ -42,12 +37,30 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Button
-        onPress={handleAuthenticatePress}
-        title="Authenticate"
-        color="#841584"
-      />
-      <Text>{result && JSON.stringify(result)}</Text>
+      <Text>Redirect URL: {redirectUri}</Text>
+      <View style={styles.buttonContainer}>
+        <Button
+          onPress={() => handleAuthenticate('urn:grn:authn:se:bankid:same-device')}
+          title="Authenticate with SE Bank ID"
+          color="#841584"
+        />
+      </View>
+      <View style={styles.buttonContainer}>
+        <Button
+
+          onPress={() => handleAuthenticate('urn:grn:authn:dk:nemid:poces')}
+          title="Authenticate with DK NemID"
+          color="#841584"
+        />
+      </View>
+      <View style={styles.buttonContainer}>
+        <Button
+          onPress={() => handleAuthenticate('urn:grn:authn:dk:mitid:low')}
+          title="Authenticate with DK MitID"
+          color="#841584"
+        />
+      </View>
+      <Text>Result: {result && JSON.stringify(result)}</Text>
       <StatusBar style="auto" />
     </View>
   );
@@ -60,4 +73,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  buttonContainer: {
+    margin: 10
+  }
 });
