@@ -5,14 +5,15 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import jwt_decode from "jwt-decode";
 
-const authority = "192.168.18.3:44362";
+const authority = "192.168.18.3:44362"; // CHANGE ME
+const clientId = "https://localhost:44301/"; // CHANGE ME
 const redirectUri = Linking.makeUrl('/');
 
 export default function App() {
   const [result, setResult] = useState<WebBrowser.WebBrowserAuthSessionResult | null>(null);
 
   let handleAuthenticate = async (acr) => {
-    const url = `https://${authority}/oauth2/authorize?scope=openid&nonce=blah&client_id=https://localhost:44301/&redirect_uri=${redirectUri}&response_type=id_token&response_mode=query&nonce=ecnon&state=etats&acr_values=${acr}`;
+    const url = `https://${authority}/oauth2/authorize?scope=openid&nonce=blah&client_id=${clientId}&redirect_uri=${redirectUri}&response_type=id_token&response_mode=query&nonce=ecnon&state=etats&acr_values=${acr}`;
 
     const result = await WebBrowser.openAuthSessionAsync(
       url,
