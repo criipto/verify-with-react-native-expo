@@ -4,16 +4,46 @@ import { StyleSheet, Text, View, Button } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import jwt_decode from "jwt-decode";
+import useAppState from './hooks/useAppState';
 
-const authority = "192.168.18.3:44362"; // CHANGE ME
-const clientId = "https://localhost:44301/"; // CHANGE ME
-const redirectUri = Linking.makeUrl('/');
+//const authority = "192.168.18.3:44362";
+const authority = "192.168.18.3:3000";
+const protocol = "http";
+const acr = 'urn:grn:authn:se:bankid:same-device';
+
+interface Links {
+  cancelUrl: string
+  completeUrl: string
+  launchLinks: {
+    customFileHandlerUrl: string
+    universalLink: string
+  }
+}
+
+function proxyUrl(url : string) {
+  return url.replace('https://localhost:44362', `${protocol}://${authority}`);
+}
 
 export default function App() {
   const [result, setResult] = useState<WebBrowser.WebBrowserAuthSessionResult | null>(null);
+  const [links, setLinks] = useState<Links | null>(null);
+  const appState = useAppState(async () => {
+    const result = await fetch(proxyUrl(links!.completeUrl)).then(response => {
+      return response.headers.get('location');
+    });
 
-  let handleAuthenticate = async (acr) => {
-    const url = `https://${authority}/oauth2/authorize?scope=openid&nonce=blah&client_id=${clientId}&redirect_uri=${redirectUri}&response_type=id_token&response_mode=query&nonce=ecnon&state=etats&acr_values=${acr}`;
+    const {queryParams} = Linking.parse(result!); 
+    if (queryParams) {
+      const {id_token} = queryParams;
+      if (id_token) {
+        setResult(jwt_decode(id_token));
+      }
+    }
+  });
+
+  const handleAuthenticateBrowserPress = async () => {
+    const redirectUri = Linking.makeUrl('/');
+    const url = `${protocol}://${authority}/oauth2/authorize?scope=openid&nonce=blah&client_id=https://localhost:44301/&redirect_uri=${redirectUri}&response_type=id_token&response_mode=query&nonce=ecnon&state=etats&acr_values=${acr}`;
 
     const result = await WebBrowser.openAuthSessionAsync(
       url,
@@ -36,32 +66,31 @@ export default function App() {
     }
   }
 
+  const handleAuthenticateAppPress = async () => {
+    const redirectUri = Linking.makeUrl('/');
+    const url = `${protocol}://${authority}/oauth2/authorize?scope=openid&nonce=blah&client_id=https://localhost:44301/&redirect_uri=${redirectUri}&response_type=id_token&response_mode=query&nonce=ecnon&state=etats&acr_values=${acr}&login_hint=appswitch:android`;
+    const result = await fetch(url).then(response => response.json()).catch(err => console.error(err)) as Links;
+    setLinks(result);
+    Linking.openURL(result.launchLinks.customFileHandlerUrl);
+  }
+
   return (
     <View style={styles.container}>
-      <Text>Redirect URL: {redirectUri}</Text>
       <View style={styles.buttonContainer}>
         <Button
-          onPress={() => handleAuthenticate('urn:grn:authn:se:bankid:same-device')}
-          title="Authenticate with SE Bank ID"
+          onPress={handleAuthenticateBrowserPress}
+          title="Authenticate via browser"
           color="#841584"
         />
       </View>
       <View style={styles.buttonContainer}>
         <Button
-
-          onPress={() => handleAuthenticate('urn:grn:authn:dk:nemid:poces')}
-          title="Authenticate with DK NemID"
+          onPress={handleAuthenticateAppPress}
+          title="Authenticate via appswitch"
           color="#841584"
         />
       </View>
-      <View style={styles.buttonContainer}>
-        <Button
-          onPress={() => handleAuthenticate('urn:grn:authn:dk:mitid:low')}
-          title="Authenticate with DK MitID"
-          color="#841584"
-        />
-      </View>
-      <Text>Result: {result && JSON.stringify(result)}</Text>
+      <Text>{result && JSON.stringify(result)}</Text>
       <StatusBar style="auto" />
     </View>
   );
@@ -75,6 +104,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonContainer: {
-    margin: 10
+    marginBottom: 30
   }
 });
