@@ -1,15 +1,15 @@
 import { StatusBar } from 'expo-status-bar';
 import React, {useState} from 'react';
 import { StyleSheet, Text, View, Button } from 'react-native';
+import {Picker} from '@react-native-picker/picker';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import jwt_decode from "jwt-decode";
 import useAppState from './hooks/useAppState';
 
-//const authority = "192.168.18.3:44362";
-const authority = "192.168.18.3:3000";
-const protocol = "http";
-const acr = 'urn:grn:authn:se:bankid:same-device';
+const authority = "mick-mitid-test.criipto.io";
+const protocol = "https";
+const clientID = 'urn:application:example';
 
 interface Links {
   cancelUrl: string
@@ -25,25 +25,30 @@ function proxyUrl(url : string) {
 }
 
 export default function App() {
+  const [device, setDevice] = useState<'android' | 'ios'>('android');
+  const [acr, setAcr] = useState('urn:grn:authn:se:bankid:same-device');
   const [result, setResult] = useState<WebBrowser.WebBrowserAuthSessionResult | null>(null);
   const [links, setLinks] = useState<Links | null>(null);
   const appState = useAppState(async () => {
-    const result = await fetch(proxyUrl(links!.completeUrl)).then(response => {
-      return response.headers.get('location');
-    });
+    if (acr === 'urn:grn:authn:se:bankid:same-device') {
+      const result = await fetch(proxyUrl(links!.completeUrl)).then(response => {
+        return response.headers.get('location');
+      });
 
-    const {queryParams} = Linking.parse(result!); 
-    if (queryParams) {
-      const {id_token} = queryParams;
-      if (id_token) {
-        setResult(jwt_decode(id_token));
+      const {queryParams} = Linking.parse(result!); 
+      if (queryParams) {
+        const {id_token} = queryParams;
+        if (id_token) {
+          setResult(jwt_decode(id_token));
+          console.log(jwt_decode(id_token));
+        }
       }
     }
   });
 
   const handleAuthenticateBrowserPress = async () => {
-    const redirectUri = Linking.makeUrl('/');
-    const url = `${protocol}://${authority}/oauth2/authorize?scope=openid&nonce=blah&client_id=https://localhost:44301/&redirect_uri=${redirectUri}&response_type=id_token&response_mode=query&nonce=ecnon&state=etats&acr_values=${acr}`;
+    const redirectUri = Linking.createURL('/');
+    const url = `${protocol}://${authority}/oauth2/authorize?scope=openid&nonce=blah&client_id=${clientID}&redirect_uri=${redirectUri}&response_type=id_token&response_mode=query&nonce=ecnon&state=etats&acr_values=${acr}`;
 
     const result = await WebBrowser.openAuthSessionAsync(
       url,
@@ -67,15 +72,47 @@ export default function App() {
   }
 
   const handleAuthenticateAppPress = async () => {
-    const redirectUri = Linking.makeUrl('/');
-    const url = `${protocol}://${authority}/oauth2/authorize?scope=openid&nonce=blah&client_id=https://localhost:44301/&redirect_uri=${redirectUri}&response_type=id_token&response_mode=query&nonce=ecnon&state=etats&acr_values=${acr}&login_hint=appswitch:android`;
-    const result = await fetch(url).then(response => response.json()).catch(err => console.error(err)) as Links;
-    setLinks(result);
-    Linking.openURL(result.launchLinks.customFileHandlerUrl);
+    const redirectUri = Linking.createURL('/');
+    console.log(redirectUri);
+    const url = `${protocol}://${authority}/oauth2/authorize?scope=openid&nonce=blah&client_id=${clientID}&redirect_uri=${redirectUri}&response_type=id_token&response_mode=query&nonce=ecnon&state=etats&acr_values=${acr}&login_hint=appswitch:${device}`;
+    console.log(url);
+
+    if (acr === 'urn:grn:authn:se:bankid:same-device') {
+      const result = await fetch(url).then(response => response.json()).catch(err => console.error(err)) as Links;
+      setLinks(result);
+      Linking.openURL(result.launchLinks.customFileHandlerUrl);
+    } else {
+      const result = await WebBrowser.openAuthSessionAsync(
+        url,
+        redirectUri,
+        {
+          showInRecents: true
+        }
+      );
+
+      console.log(result);
+    }
   }
 
   return (
     <View style={styles.container}>
+      <Text>Redirect URI: {Linking.createURL('/')}</Text>
+      <Picker
+        selectedValue={device}
+        style={{ height: 50, width: 150 }}
+        onValueChange={(itemValue, itemIndex) => setDevice(itemValue)}
+      >
+        <Picker.Item label="Android" value="android" />
+        <Picker.Item label="iOS" value="ios" />
+      </Picker>
+      <Picker
+        selectedValue={acr}
+        style={{ height: 50, width: 150 }}
+        onValueChange={(itemValue, itemIndex) => setAcr(itemValue)}
+      >
+        <Picker.Item label="DK MitID" value="urn:grn:authn:dk:mitid:substantial" />
+        <Picker.Item label="SE BankID" value="urn:grn:authn:se:bankid:same-device" />
+      </Picker>
       <View style={styles.buttonContainer}>
         <Button
           onPress={handleAuthenticateBrowserPress}

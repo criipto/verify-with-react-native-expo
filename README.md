@@ -10,3 +10,10 @@ Install the Expo app on your phone:
 - Scan the QR code from your Expo App.
 - Make sure the Criipto Application has a callback that matches the callback URL displayed in the mobile app (something like `exp://192.168.18.3:19000/--/`)
 - Press Authenticate
+
+## WSL
+
+You may need to:
+
+- Start XWin
+- Setup XAuth `DISPLAY=:0.0 xhost $(wsl hostname -I)`
