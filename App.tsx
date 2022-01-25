@@ -10,6 +10,8 @@ import useAppState from './hooks/useAppState';
 const authority = "mick-mitid-test.criipto.io";
 const protocol = "https";
 const clientID = 'urn:application:example';
+const device : 'android' | 'ios' = 'android';
+const acr = 'urn:grn:authn:se:bankid:same-device';
 
 interface Links {
   cancelUrl: string
@@ -25,8 +27,6 @@ function proxyUrl(url : string) {
 }
 
 export default function App() {
-  const [device, setDevice] = useState<'android' | 'ios'>('android');
-  const [acr, setAcr] = useState('urn:grn:authn:se:bankid:same-device');
   const [result, setResult] = useState<WebBrowser.WebBrowserAuthSessionResult | null>(null);
   const [links, setLinks] = useState<Links | null>(null);
   const appState = useAppState(async () => {
@@ -97,22 +97,6 @@ export default function App() {
   return (
     <View style={styles.container}>
       <Text>Redirect URI: {Linking.createURL('/')}</Text>
-      <Picker
-        selectedValue={device}
-        style={{ height: 50, width: 150 }}
-        onValueChange={(itemValue, itemIndex) => setDevice(itemValue)}
-      >
-        <Picker.Item label="Android" value="android" />
-        <Picker.Item label="iOS" value="ios" />
-      </Picker>
-      <Picker
-        selectedValue={acr}
-        style={{ height: 50, width: 150 }}
-        onValueChange={(itemValue, itemIndex) => setAcr(itemValue)}
-      >
-        <Picker.Item label="DK MitID" value="urn:grn:authn:dk:mitid:substantial" />
-        <Picker.Item label="SE BankID" value="urn:grn:authn:se:bankid:same-device" />
-      </Picker>
       <View style={styles.buttonContainer}>
         <Button
           onPress={handleAuthenticateBrowserPress}
