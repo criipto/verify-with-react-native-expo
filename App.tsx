@@ -1,3 +1,5 @@
+import 'text-encoding';
+import 'react-native-get-random-values';
 import { StatusBar } from 'expo-status-bar';
 import React, {useCallback, useEffect, useState} from 'react';
 import { Platform, StyleSheet, Text, View, Pressable } from 'react-native';
@@ -6,6 +8,15 @@ import * as WebBrowser from 'expo-web-browser';
 import jwt_decode from "jwt-decode";
 import useAppState from './hooks/useAppState';
 import CriiptoAuth, { generatePKCE, PKCE } from '@criipto/auth-js';
+import {decode, encode} from 'base-64';
+
+if (!global.btoa) {
+    global.btoa = encode;
+}
+
+if (!global.atob) {
+    global.atob = decode;
+}
 
 const authority = "samples.criipto.io";
 const protocol = "https";
@@ -40,31 +51,35 @@ export default function App() {
   useAppState(async () => {
     console.log('onForeground', !!links);
     if (links) {
-      setPending(true);
-
-      const result : {location: string} = await fetch(proxyUrl(links!.completeUrl)).then(response => {
-        return response.json();
-      });
-
-      const {queryParams} = Linking.parse(result.location); 
-      if (queryParams) {
-        await criiptoAuth.processResponse(queryParams, {
-          code_verifier: pkce!.code_verifier,
-          redirect_uri: redirectUri
-        }).then(response => {
-          setPending(false);
-          if (response?.id_token) {
-            setResult(jwt_decode(response.id_token));
-            return;
-          }
-          setResult(response as any);
-        }).catch(error => {
-          setPending(false);
-          setResult(error);
-        });
-      }
+      handleBankID();
     }
   });
+
+  const handleBankID = async () => {
+    setPending(true);
+
+    const result : {location: string} = await fetch(proxyUrl(links!.completeUrl)).then(response => {
+      return response.json();
+    });
+
+    const {queryParams} = Linking.parse(result.location); 
+    if (queryParams) {
+      await criiptoAuth.processResponse(queryParams, {
+        code_verifier: pkce!.code_verifier,
+        redirect_uri: redirectUri
+      }).then(response => {
+        setPending(false);
+        if (response?.id_token) {
+          setResult(jwt_decode(response.id_token));
+          return;
+        }
+        setResult(response as any);
+      }).catch(error => {
+        setPending(false);
+        setResult(error);
+      });
+    }
+  }
 
   const reset = () => {
     setResult(null);
@@ -80,6 +95,11 @@ export default function App() {
   }, []);
 
   const handleUrl = useCallback(async (url) => {
+    if (links) {
+      handleBankID();
+      return;
+    }
+
     const {queryParams} = Linking.parse(url); 
     if (queryParams && queryParams.code || queryParams.error) {
       await criiptoAuth.processResponse(queryParams, {
@@ -97,7 +117,7 @@ export default function App() {
         setResult(error);
       });
     }
-  }, [pkce, redirectUri, criiptoAuth])
+  }, [pkce, redirectUri, criiptoAuth, links])
 
   useEffect(() => {
     console.log('useEffect.handleUrl');
@@ -132,7 +152,7 @@ export default function App() {
     if (acr === 'urn:grn:authn:se:bankid:same-device') {
       const result = await fetch(url).then(response => response.json()).catch(err => console.error(err)) as Links;
       setLinks(result);
-      Linking.openURL(result.launchLinks.customFileHandlerUrl);
+      Linking.openURL(result.launchLinks.universalLink);
     } 
     else if (acr.startsWith('urn:grn:authn:dk:mitid')) {
       const result = await WebBrowser.openAuthSessionAsync(url, redirectUri, {

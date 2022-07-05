@@ -10,6 +10,7 @@
   "dependencies": {
     "@criipto/auth-js": "^2.2.0",
     "@react-native-picker/picker": "^2.2.1",
+    "base-64": "^1.0.0",
     "expo": "~44.0.0",
     "expo-linking": "~3.0.0",
     "expo-status-bar": "~1.2.0",
@@ -18,10 +19,13 @@
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
     "react-native": "github:expo/react-native#sdk-44.0.0",
-    "react-native-web": "~0.17.5"
+    "react-native-get-random-values": "^1.8.0",
+    "react-native-web": "~0.17.5",
+    "text-encoding": "^0.7.0"
   },
   "devDependencies": {
     "@babel/core": "^7.9.0",
+    "@types/base-64": "^1.0.0",
     "@types/react": "~16.9.35",
     "@types/react-dom": "~16.9.8",
     "@types/react-native": "~0.63.2",
