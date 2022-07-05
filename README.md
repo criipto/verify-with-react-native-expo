@@ -17,3 +17,4 @@ You may need to:
 
 - Start XWin
 - Setup XAuth `DISPLAY=:0.0 xhost $(wsl hostname -I)`
+
