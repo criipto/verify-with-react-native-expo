@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { AppState, AppStateStatus, StyleSheet, Text, View } from 'react-native';
 
-export default function useAppState(onForeground? : () => void) {
+export default function useAppState(onForeground? : () => void, deps: React.DependencyList = []) {
   const appState = useRef(AppState.currentState);
   const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
@@ -11,7 +11,7 @@ export default function useAppState(onForeground? : () => void) {
     return () => {
       AppState.removeEventListener('change', _handleAppStateChange);
     };
-  }, []);
+  }, deps);
 
   const _handleAppStateChange = (nextAppState : AppStateStatus) => {
     if (

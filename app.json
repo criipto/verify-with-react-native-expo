@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "verify-with-react-native-expo",
-    "slug": "verify-with-react-native-expo",
+    "name": "criipto-verify-example",
+    "slug": "criipto-verify-example",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -28,6 +28,8 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "criiptosample"
+    "scheme": "criiptosample",
+    "description": "",
+    "githubUrl": "https://github.com/criipto/verify-with-react-native-expo"
   }
 }

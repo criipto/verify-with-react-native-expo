@@ -7,8 +7,9 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import jwt_decode from "jwt-decode";
 import useAppState from './hooks/useAppState';
-import CriiptoAuth, { generatePKCE, PKCE } from '@criipto/auth-js';
+import CriiptoAuth, { PKCE } from '@criipto/auth-js';
 import {decode, encode} from 'base-64';
+import * as Crypto from 'expo-crypto';
 
 if (!global.btoa) {
     global.btoa = encode;
@@ -37,6 +38,32 @@ interface Links {
   }
 }
 
+function base64URLEncode(input : Uint8Array | string) {
+  input = typeof input === "string" ? input : String.fromCharCode(...input);
+  return encode(input)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+}
+
+
+async function generatePKCE() : Promise<PKCE> {
+  const bytes = new Uint8Array(32);
+  window.crypto.getRandomValues(bytes);
+  const code_verifier = base64URLEncode(bytes);
+  const code_challenge_method = 'S256';
+  
+  const digest = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    code_verifier,
+    {encoding: Crypto.CryptoEncoding.BASE64}
+  );
+
+  const code_challenge = digest.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+  return {code_verifier, code_challenge, code_challenge_method};
+}
+
 function proxyUrl(url : string) {
   return url.replace('https://localhost:44362', `${protocol}://${authority}`);
 }
@@ -53,7 +80,7 @@ export default function App() {
     if (links) {
       handleBankID();
     }
-  });
+  }, [links]);
 
   const handleBankID = async () => {
     setPending(true);
@@ -120,7 +147,6 @@ export default function App() {
   }, [pkce, redirectUri, criiptoAuth, links])
 
   useEffect(() => {
-    console.log('useEffect.handleUrl');
     const handler : Linking.URLListener = async (event) => {
       console.log('Linking.url.event', event.url);
 
@@ -156,7 +182,8 @@ export default function App() {
     } 
     else if (acr.startsWith('urn:grn:authn:dk:mitid')) {
       const result = await WebBrowser.openAuthSessionAsync(url, redirectUri, {
-        createTask: false
+        createTask: true,
+        showInRecents: true
       });
 
       console.log(result);
